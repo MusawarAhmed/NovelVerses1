@@ -1,9 +1,124 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { MockBackendService } from '../services/mockBackend';
 import { GeminiService } from '../services/geminiService';
 import { Novel, Transaction, User, Chapter } from '../types';
-import { Plus, Sparkles, Book, FileText, DollarSign, BarChart2, Users, Activity, Trash2, Shield, User as UserIcon, Edit, X, Save, RefreshCw } from 'lucide-react';
+import { 
+  Plus, Sparkles, Book, FileText, DollarSign, BarChart2, Users, 
+  Activity, Trash2, Shield, User as UserIcon, Edit, X, Save, 
+  RefreshCw, Bold, Italic, Underline, List, Code, Type, Strikethrough, Eye 
+} from 'lucide-react';
+
+// --- Custom Rich Text Editor Component ---
+interface RichTextEditorProps {
+  value: string;
+  onChange: (html: string) => void;
+}
+
+const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange }) => {
+  const [mode, setMode] = useState<'visual' | 'code'>('visual');
+  const editorRef = useRef<HTMLDivElement>(null);
+  
+  // Ref to track if the update is coming from the user typing (internal) or parent prop (external)
+  const isInternalChange = useRef(false);
+
+  useEffect(() => {
+    // Only update innerHTML from props if the change didn't originate from this component
+    // This prevents cursor jumping issues
+    if (editorRef.current && !isInternalChange.current && mode === 'visual') {
+      if (editorRef.current.innerHTML !== value) {
+        editorRef.current.innerHTML = value;
+      }
+    }
+    isInternalChange.current = false;
+  }, [value, mode]);
+
+  const handleFormat = (command: string, val: string | undefined = undefined) => {
+    if (mode !== 'visual') return;
+    document.execCommand(command, false, val);
+    if (editorRef.current) {
+      handleInput(); // Trigger update immediately after format
+    }
+  };
+
+  const handleInput = () => {
+    if (editorRef.current) {
+      isInternalChange.current = true;
+      onChange(editorRef.current.innerHTML);
+    }
+  };
+
+  const ToolbarButton = ({ icon: Icon, command, arg, active = false }: any) => (
+    <button
+      type="button"
+      onMouseDown={(e) => { e.preventDefault(); handleFormat(command, arg); }}
+      className={`p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors ${active ? 'bg-slate-200 dark:bg-slate-600 text-primary' : 'text-slate-600 dark:text-slate-300'}`}
+      title={command}
+    >
+      <Icon size={16} />
+    </button>
+  );
+
+  return (
+    <div className="border border-slate-300 dark:border-slate-600 rounded-lg overflow-hidden bg-white dark:bg-slate-700 flex flex-col h-[500px]">
+      {/* Toolbar */}
+      <div className="flex items-center justify-between px-2 py-2 bg-slate-50 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-600">
+        <div className="flex items-center space-x-1 flex-wrap gap-y-1">
+          {mode === 'visual' && (
+            <>
+              <ToolbarButton icon={Bold} command="bold" />
+              <ToolbarButton icon={Italic} command="italic" />
+              <ToolbarButton icon={Underline} command="underline" />
+              <ToolbarButton icon={Strikethrough} command="strikeThrough" />
+              <div className="w-px h-4 bg-slate-300 dark:bg-slate-500 mx-2"></div>
+              <ToolbarButton icon={Type} command="formatBlock" arg="h3" />
+              <ToolbarButton icon={Type} command="formatBlock" arg="p" />
+              <div className="w-px h-4 bg-slate-300 dark:bg-slate-500 mx-2"></div>
+              <ToolbarButton icon={List} command="insertUnorderedList" />
+            </>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={() => setMode(mode === 'visual' ? 'code' : 'visual')}
+          className="flex items-center text-xs font-medium px-2 py-1 rounded bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-500 transition-colors ml-2"
+        >
+          {mode === 'visual' ? (
+            <><Code size={14} className="mr-1" /> HTML Source</>
+          ) : (
+            <><Eye size={14} className="mr-1" /> Visual Editor</>
+          )}
+        </button>
+      </div>
+
+      {/* Editor Area */}
+      <div className="flex-grow relative overflow-hidden">
+        {mode === 'visual' ? (
+          <div
+            ref={editorRef}
+            contentEditable
+            onInput={handleInput}
+            className="absolute inset-0 w-full h-full p-4 overflow-y-auto focus:outline-none prose dark:prose-invert max-w-none"
+            dangerouslySetInnerHTML={{ __html: value }} // Initial render
+          />
+        ) : (
+          <textarea
+            value={value}
+            onChange={(e) => { onChange(e.target.value); }}
+            className="w-full h-full p-4 bg-slate-900 text-green-400 font-mono text-sm focus:outline-none resize-none"
+            spellCheck={false}
+          />
+        )}
+      </div>
+      <div className="px-2 py-1 bg-slate-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-600 text-xs text-slate-400 flex justify-between">
+        <span>{mode === 'visual' ? 'Writing Mode' : 'HTML Mode'}</span>
+        <span>{value.length} chars</span>
+      </div>
+    </div>
+  );
+};
+
+// --- Main Admin Component ---
 
 export const Admin: React.FC = () => {
   const location = useLocation();
@@ -600,8 +715,11 @@ export const Admin: React.FC = () => {
                         )}
                     </div>
                     <div>
-                        <label className="block text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">Content (HTML allowed)</label>
-                        <textarea required rows={12} value={newChapter.content} onChange={e => setNewChapter({...newChapter, content: e.target.value})} className="w-full p-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white font-mono text-sm focus:ring-2 focus:ring-primary outline-none" placeholder="Paste chapter text here..." />
+                        <label className="block text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">Content</label>
+                        <RichTextEditor 
+                          value={newChapter.content} 
+                          onChange={(html) => setNewChapter({...newChapter, content: html})} 
+                        />
                     </div>
                     <button type="submit" className="w-full py-3.5 bg-primary text-white rounded-lg font-bold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/20">
                         {editingChapterId ? 'Update Chapter' : 'Publish Chapter'}
