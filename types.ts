@@ -1,3 +1,4 @@
+
 export interface User {
   id: string;
   username: string;
@@ -16,10 +17,12 @@ export interface Novel {
   description: string;
   coverUrl: string;
   tags: string[];
+  category: 'Original' | 'Fanfic' | 'Translation';
   status: 'Ongoing' | 'Completed';
   views: number;
   rating: number;
   updatedAt: string;
+  isWeeklyFeatured?: boolean;
 }
 
 export interface Chapter {
@@ -27,6 +30,7 @@ export interface Chapter {
   novelId: string;
   title: string;
   content: string; // HTML or Markdown
+  volume: string; // New field for volume grouping
   order: number;
   isPaid: boolean;
   price: number;
