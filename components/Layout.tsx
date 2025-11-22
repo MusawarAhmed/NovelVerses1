@@ -1,6 +1,7 @@
+
 import React, { useContext, useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { BookOpen, User, Sun, Moon, LogOut, ShieldCheck, Coins, Search as SearchIcon } from 'lucide-react';
+import { BookOpen, User, Sun, Moon, LogOut, ShieldCheck, Coins, Search as SearchIcon, Trophy, Compass, PenTool } from 'lucide-react';
 import { AppContext } from '../App';
 import { MockBackendService } from '../services/mockBackend';
 import { Novel } from '../types';
@@ -65,23 +66,28 @@ export const Layout: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Navbar */}
-      <nav className={`sticky top-0 z-40 border-b border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm transition-colors duration-300`}>
+      <nav className={`sticky top-0 z-40 border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm transition-colors duration-300`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <Link to="/" className="flex-shrink-0 flex items-center gap-2">
-                <div className="bg-gradient-to-br from-primary to-secondary w-8 h-8 rounded-lg flex items-center justify-center text-white">
-                  <BookOpen size={20} />
+              <Link to="/" className="flex-shrink-0 flex items-center gap-2 mr-6">
+                <div className="bg-primary w-8 h-8 rounded flex items-center justify-center text-white font-bold">
+                  N
                 </div>
                 <span className="font-bold text-xl tracking-tight text-slate-900 dark:text-white hidden sm:block">NovelVerse</span>
               </Link>
-              <div className="hidden md:ml-8 md:flex md:space-x-8">
-                <Link to="/" className="text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
-                  Browse
+              <div className="hidden md:flex md:space-x-6">
+                <Link to="/browse/all" className="flex items-center text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-white px-3 py-2 text-sm font-medium transition-colors">
+                  <Compass size={16} className="mr-1.5"/> Browse
                 </Link>
-                <Link to="/profile" className="text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
-                  Library
+                <Link to="/browse/rankings" className="flex items-center text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-white px-3 py-2 text-sm font-medium transition-colors">
+                  <Trophy size={16} className="mr-1.5"/> Rankings
                 </Link>
+                {user?.role === 'admin' && (
+                   <Link to="/admin" className="flex items-center text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-white px-3 py-2 text-sm font-medium transition-colors">
+                    <PenTool size={16} className="mr-1.5"/> Create
+                  </Link>
+                )}
               </div>
             </div>
 
@@ -99,8 +105,8 @@ export const Layout: React.FC = () => {
                     setShowSearchDropdown(true);
                   }}
                   onFocus={() => setShowSearchDropdown(true)}
-                  placeholder="Search novels..."
-                  className="block w-full pl-10 pr-3 py-1.5 border border-slate-300 dark:border-slate-700 rounded-full leading-5 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-500 focus:outline-none focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm transition-colors"
+                  placeholder="Search..."
+                  className="block w-full pl-10 pr-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-full leading-5 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-500 focus:outline-none focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm transition-colors"
                 />
               </form>
 
@@ -154,12 +160,11 @@ export const Layout: React.FC = () => {
                 <SearchIcon size={20} />
               </button>
 
-              {user && (
-                <div className="hidden sm:flex items-center px-3 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-full text-xs font-bold">
-                  <Coins size={14} className="mr-1" />
-                  {user.coins}
-                </div>
-              )}
+              <Link to="/profile" className="hidden sm:flex text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-white">
+                 <div className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">
+                    <BookOpen size={20} />
+                 </div>
+              </Link>
 
               <button
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
@@ -174,7 +179,7 @@ export const Layout: React.FC = () => {
                     onClick={() => setShowUserMenu(!showUserMenu)}
                     className="flex items-center space-x-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:text-primary dark:hover:text-white transition-colors focus:outline-none"
                   >
-                    <div className="w-8 h-8 bg-indigo-100 dark:bg-slate-700 rounded-full flex items-center justify-center text-primary dark:text-slate-200 ring-2 ring-transparent hover:ring-primary/50 transition-all">
+                     <div className="w-8 h-8 bg-indigo-100 dark:bg-slate-700 rounded-full flex items-center justify-center text-primary dark:text-slate-200 ring-2 ring-transparent hover:ring-primary/50 transition-all">
                       {user.username[0].toUpperCase()}
                     </div>
                   </button>
@@ -184,6 +189,7 @@ export const Layout: React.FC = () => {
                     <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5 transform origin-top-right z-50">
                       <div className="px-4 py-2 text-xs text-slate-500 dark:text-slate-400 border-b dark:border-slate-700">
                         Signed in as <br/> <span className="font-bold text-slate-900 dark:text-white">{user.username}</span>
+                        <div className="flex items-center mt-1 text-yellow-600 dark:text-yellow-400 font-bold"><Coins size={12} className="mr-1"/> {user.coins}</div>
                       </div>
                       {user.role === 'admin' && (
                         <Link 
@@ -208,7 +214,7 @@ export const Layout: React.FC = () => {
                   )}
                 </div>
               ) : (
-                <Link to="/auth" className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-indigo-700 shadow-sm transition-colors">
+                <Link to="/auth" className="inline-flex items-center justify-center px-5 py-2 border border-transparent text-sm font-medium rounded-full text-white bg-primary hover:bg-indigo-700 shadow-sm transition-colors">
                   Sign In
                 </Link>
               )}
@@ -222,8 +228,22 @@ export const Layout: React.FC = () => {
       </main>
 
       {!isReader && (
-        <footer className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-8">
-          <div className="max-w-7xl mx-auto px-4 text-center text-slate-500 dark:text-slate-400 text-sm">
+        <footer className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 pt-12 pb-8">
+          <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center">
+            <div className="flex items-center gap-2 mb-4 md:mb-0">
+                 <div className="bg-primary w-8 h-8 rounded flex items-center justify-center text-white font-bold">
+                  N
+                </div>
+                <span className="font-bold text-xl text-slate-900 dark:text-white">NovelVerse</span>
+            </div>
+            <div className="flex gap-6 text-sm text-slate-500 dark:text-slate-400">
+                <Link to="/" className="hover:text-primary">About</Link>
+                <Link to="/" className="hover:text-primary">Contact</Link>
+                <Link to="/" className="hover:text-primary">Terms of Service</Link>
+                <Link to="/" className="hover:text-primary">Privacy Policy</Link>
+            </div>
+          </div>
+          <div className="max-w-7xl mx-auto px-4 text-center text-slate-400 dark:text-slate-600 text-xs mt-8">
             <p>&copy; {new Date().getFullYear()} NovelVerse. All rights reserved.</p>
           </div>
         </footer>

@@ -1,14 +1,17 @@
+
 import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { Home } from './pages/Home';
 import { Search } from './pages/Search';
+import { Browse } from './pages/Browse';
 import { NovelDetail } from './pages/NovelDetail';
 import { Reader } from './pages/Reader';
 import { Auth } from './pages/Auth';
 import { Admin } from './pages/Admin';
 import { UserProfile } from './pages/UserProfile';
-import { User, MockBackendService } from './services/mockBackend';
+import { MockBackendService } from './services/mockBackend';
+import { User } from './types';
 
 // Context for global state
 export const AppContext = React.createContext<{
@@ -91,6 +94,7 @@ export default function App() {
           <Route path="/" element={<Layout />}>
             <Route index element={<Home />} />
             <Route path="search" element={<Search />} />
+            <Route path="browse/:type" element={<Browse />} />
             <Route path="novel/:id" element={<NovelDetail />} />
             <Route path="read/:novelId/:chapterId" element={<Reader />} />
             <Route path="auth" element={<Auth />} />

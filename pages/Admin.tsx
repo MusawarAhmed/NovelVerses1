@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { MockBackendService } from '../services/mockBackend';
@@ -6,7 +7,7 @@ import { Novel, Transaction, User, Chapter } from '../types';
 import { 
   Plus, Sparkles, Book, FileText, DollarSign, BarChart2, Users, 
   Activity, Trash2, Shield, User as UserIcon, Edit, X, Save, 
-  RefreshCw, Bold, Italic, Underline, List, Code, Type, Strikethrough, Eye 
+  RefreshCw, Bold, Italic, Underline, List, Code, Type, Strikethrough, Eye, Layers
 } from 'lucide-react';
 
 // --- Custom Rich Text Editor Component ---
@@ -132,7 +133,17 @@ export const Admin: React.FC = () => {
   const [isCreatingNovel, setIsCreatingNovel] = useState(false);
   const [editingNovelId, setEditingNovelId] = useState<string | null>(null);
   
-  const initialNovelState = { title: '', author: '', description: '', tags: '', genre: '', coverUrl: '', status: 'Ongoing' };
+  const initialNovelState = { 
+      title: '', 
+      author: '', 
+      description: '', 
+      tags: '', 
+      genre: '', 
+      coverUrl: '', 
+      status: 'Ongoing', 
+      category: 'Original',
+      isWeeklyFeatured: false
+  };
   
   // Initialize Novel State from LocalStorage Draft if available
   const [newNovel, setNewNovel] = useState(() => {
@@ -150,7 +161,7 @@ export const Admin: React.FC = () => {
 
   const [newChapter, setNewChapter] = useState(() => {
       const draft = localStorage.getItem('nv_admin_chapter_draft');
-      return draft ? JSON.parse(draft).chapterData : { title: '', content: '', price: 0, isPaid: false };
+      return draft ? JSON.parse(draft).chapterData : { title: '', content: '', price: 0, isPaid: false, volume: 'Volume 1' };
   });
 
   const [editingChapterId, setEditingChapterId] = useState<string | null>(null);
@@ -247,7 +258,9 @@ export const Admin: React.FC = () => {
                 description: newNovel.description,
                 tags: newNovel.tags.split(',').map(t => t.trim()),
                 coverUrl: newNovel.coverUrl || existing.coverUrl,
-                status: newNovel.status as 'Ongoing' | 'Completed'
+                status: newNovel.status as 'Ongoing' | 'Completed',
+                category: newNovel.category as 'Original' | 'Fanfic' | 'Translation',
+                isWeeklyFeatured: newNovel.isWeeklyFeatured
             });
         }
     } else {
@@ -258,7 +271,9 @@ export const Admin: React.FC = () => {
             description: newNovel.description,
             tags: newNovel.tags.split(',').map(t => t.trim()),
             coverUrl: newNovel.coverUrl || `https://picsum.photos/seed/${newNovel.title.replace(/\s/g, '')}/300/450`, 
-            status: newNovel.status as 'Ongoing' | 'Completed'
+            status: newNovel.status as 'Ongoing' | 'Completed',
+            category: newNovel.category as 'Original' | 'Fanfic' | 'Translation',
+            isWeeklyFeatured: newNovel.isWeeklyFeatured
         });
         // Clear draft only on successful create
         localStorage.removeItem('nv_admin_novel_draft');
@@ -287,7 +302,9 @@ export const Admin: React.FC = () => {
         tags: novel.tags.join(', '),
         genre: novel.tags[0] || '',
         coverUrl: novel.coverUrl,
-        status: novel.status
+        status: novel.status,
+        category: novel.category,
+        isWeeklyFeatured: !!novel.isWeeklyFeatured
     });
     setEditingNovelId(novel.id);
     setIsCreatingNovel(true);
@@ -312,9 +329,10 @@ export const Admin: React.FC = () => {
             MockBackendService.updateChapter({
                 ...existingChapter,
                 title: newChapter.title,
-                content: newChapter.content, // Save as raw HTML/Text
+                content: newChapter.content,
                 price: newChapter.isPaid ? newChapter.price : 0,
                 isPaid: newChapter.isPaid,
+                volume: newChapter.volume || 'Volume 1'
             });
             alert("Chapter updated successfully!");
         }
@@ -326,11 +344,11 @@ export const Admin: React.FC = () => {
         MockBackendService.createChapter({
             novelId: selectedNovelId,
             title: newChapter.title,
-            // Basic HTML wrapping for new chapters if entered as plain text
             content: newChapter.content.startsWith('<') ? newChapter.content : `<p>${newChapter.content.replace(/\n/g, '</p><p>')}</p>`,
             price: newChapter.isPaid ? newChapter.price : 0,
             isPaid: newChapter.isPaid,
-            order: order
+            order: order,
+            volume: newChapter.volume || 'Volume 1'
         });
         
         // Clear Draft only on new create
@@ -339,7 +357,7 @@ export const Admin: React.FC = () => {
     }
     
     // Reset Form
-    setNewChapter({ title: '', content: '', price: 0, isPaid: false });
+    setNewChapter({ title: '', content: '', price: 0, isPaid: false, volume: 'Volume 1' });
     setEditingChapterId(null);
     
     refreshData();
@@ -350,14 +368,15 @@ export const Admin: React.FC = () => {
           title: chapter.title,
           content: chapter.content,
           price: chapter.price,
-          isPaid: chapter.isPaid
+          isPaid: chapter.isPaid,
+          volume: chapter.volume || 'Volume 1'
       });
       setEditingChapterId(chapter.id);
       window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCancelEditChapter = () => {
-      setNewChapter({ title: '', content: '', price: 0, isPaid: false });
+      setNewChapter({ title: '', content: '', price: 0, isPaid: false, volume: 'Volume 1' });
       setEditingChapterId(null);
   };
 
@@ -577,12 +596,22 @@ export const Admin: React.FC = () => {
                             <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Author</label>
                             <input required value={newNovel.author} onChange={e => setNewNovel({...newNovel, author: e.target.value})} className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-primary outline-none" />
                         </div>
-                         <div>
-                            <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Status</label>
-                            <select value={newNovel.status} onChange={e => setNewNovel({...newNovel, status: e.target.value})} className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-primary outline-none">
-                                <option value="Ongoing">Ongoing</option>
-                                <option value="Completed">Completed</option>
-                            </select>
+                        <div className="grid grid-cols-2 gap-2">
+                             <div>
+                                <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Status</label>
+                                <select value={newNovel.status} onChange={e => setNewNovel({...newNovel, status: e.target.value})} className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-primary outline-none">
+                                    <option value="Ongoing">Ongoing</option>
+                                    <option value="Completed">Completed</option>
+                                </select>
+                            </div>
+                             <div>
+                                <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Category</label>
+                                <select value={newNovel.category} onChange={e => setNewNovel({...newNovel, category: e.target.value})} className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-primary outline-none">
+                                    <option value="Original">Original</option>
+                                    <option value="Fanfic">Fanfic</option>
+                                    <option value="Translation">Translation</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                     <div>
@@ -593,6 +622,16 @@ export const Admin: React.FC = () => {
                     <div>
                         <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Tags (comma separated)</label>
                         <input value={newNovel.tags} onChange={e => setNewNovel({...newNovel, tags: e.target.value})} className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-primary outline-none" />
+                    </div>
+                    <div className="flex items-center mb-2">
+                        <input 
+                            type="checkbox" 
+                            id="weeklyFeatured"
+                            checked={newNovel.isWeeklyFeatured} 
+                            onChange={e => setNewNovel({...newNovel, isWeeklyFeatured: e.target.checked})}
+                            className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary dark:focus:ring-primary dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                        />
+                        <label htmlFor="weeklyFeatured" className="ml-2 text-sm font-medium text-slate-700 dark:text-slate-300">Featured in Weekly Hero Section</label>
                     </div>
                     <div>
                         <div className="flex justify-between items-center mb-1">
@@ -691,9 +730,24 @@ export const Admin: React.FC = () => {
                             </div>
                         </div>
                     </div>
-                    <div>
-                        <label className="block text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">Chapter Title</label>
-                        <input required value={newChapter.title} onChange={e => setNewChapter({...newChapter, title: e.target.value})} className="w-full p-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-primary outline-none" placeholder="e.g. Chapter 5: The Return" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label className="block text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">Chapter Title</label>
+                            <input required value={newChapter.title} onChange={e => setNewChapter({...newChapter, title: e.target.value})} className="w-full p-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-primary outline-none" placeholder="e.g. Chapter 5: The Return" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">Volume Name</label>
+                            <div className="relative">
+                                <Layers className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={18} />
+                                <input 
+                                    required 
+                                    value={newChapter.volume} 
+                                    onChange={e => setNewChapter({...newChapter, volume: e.target.value})} 
+                                    className="w-full pl-10 p-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-primary outline-none" 
+                                    placeholder="e.g. Volume 1: The Awakening" 
+                                />
+                            </div>
+                        </div>
                     </div>
                     <div className="flex items-center space-x-4 bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
                         <label className="flex items-center cursor-pointer select-none">
@@ -738,6 +792,7 @@ export const Admin: React.FC = () => {
                             <thead className="bg-slate-50 dark:bg-slate-700/50">
                                 <tr>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Order</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Volume</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Title</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Price</th>
                                     <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Actions</th>
@@ -746,12 +801,13 @@ export const Admin: React.FC = () => {
                             <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
                                 {chapterList.length === 0 ? (
                                     <tr>
-                                        <td colSpan={4} className="px-6 py-8 text-center text-slate-500">No chapters found for this novel.</td>
+                                        <td colSpan={5} className="px-6 py-8 text-center text-slate-500">No chapters found for this novel.</td>
                                     </tr>
                                 ) : (
                                     chapterList.map((chapter) => (
                                         <tr key={chapter.id} className={editingChapterId === chapter.id ? "bg-indigo-50 dark:bg-indigo-900/20" : "hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"}>
                                             <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-500 dark:text-slate-400">#{chapter.order}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-500 dark:text-slate-400 max-w-[100px] truncate" title={chapter.volume}>{chapter.volume || '-'}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-white">{chapter.title}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
                                                 {chapter.isPaid ? `${chapter.price} Coins` : 'Free'}
